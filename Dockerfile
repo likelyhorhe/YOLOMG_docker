@@ -10,13 +10,15 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     git \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt .
+RUN git clone https://github.com/likelyhorhe/YOLOMG.git .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+RUN wget -q https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt -O yolov5s.pt
 
 EXPOSE 6006

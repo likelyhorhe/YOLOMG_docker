@@ -109,13 +109,13 @@ echo ""
 echo "─── Docker image ─────────────────────────────────"
 if ! docker image inspect "$IMAGE_NAME" &>/dev/null; then
     echo "Building image (first time, may take a few minutes)..."
-    docker build -t "$IMAGE_NAME" "$REPO_DIR"
+    docker build -t "$IMAGE_NAME" - < "$REPO_DIR/Dockerfile"
     echo -e "${GREEN}✔ Image built${NC}"
 else
     echo -e "  Image ${GREEN}$IMAGE_NAME${NC} already exists"
     read -rp "Rebuild? (y/N): " REBUILD
     if [[ "$REBUILD" =~ ^[Yy]$ ]]; then
-        docker build -t "$IMAGE_NAME" "$REPO_DIR"
+        docker build -t "$IMAGE_NAME" - < "$REPO_DIR/Dockerfile"
         echo -e "${GREEN}✔ Image rebuilt${NC}"
     fi
 fi

@@ -1,0 +1,12 @@
+datasets/
+runs/
+*.pt
+*.pth
+__pycache__/
+*.pyc
+.git/
+.idea/
+.venv/
+venv/
+env/
+config.env
