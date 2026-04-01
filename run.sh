@@ -72,38 +72,6 @@ echo "  2) Two GPUs (DDP)"
 read -rp "Choice [1/2] (default: 1): " GPU_CHOICE
 GPU_CHOICE="${GPU_CHOICE:-1}"
 
-# ─── Update paths in yaml and txt files ───────────────────────────────────────
-echo ""
-echo "─── Updating dataset paths ───────────────────────"
-
-YAML="$REPO_DIR/data/ARD100_mask32.yaml"
-CONTAINER_DATASET="/dataset"
-
-# Update yaml to use container path
-CURRENT_PREFIX=$(grep "train:" "$YAML" | head -1 | awk '{print $2}' | grep -oP "^.*${DATASET_NAME}" || true)
-if [ -n "$CURRENT_PREFIX" ] && [ "$CURRENT_PREFIX" != "$CONTAINER_DATASET" ]; then
-    sed -i "s|$CURRENT_PREFIX|$CONTAINER_DATASET|g" "$YAML"
-    echo -e "${GREEN}✔ yaml updated${NC}"
-else
-    echo "  yaml already correct"
-fi
-
-# Update txt files to use container path
-TXT_FILES=("train.txt" "train2.txt" "val.txt" "val2.txt" "test.txt")
-for f in "${TXT_FILES[@]}"; do
-    FPATH="$DATASET_PATH/$f"
-    [ ! -f "$FPATH" ] && continue
-    FIRST_LINE=$(head -1 "$FPATH")
-    [ -z "$FIRST_LINE" ] && echo "  SKIP: $f is empty" && continue
-    CURRENT_TXT_PREFIX=$(echo "$FIRST_LINE" | grep -oP "^.*${DATASET_NAME}" || true)
-    if [ -n "$CURRENT_TXT_PREFIX" ] && [ "$CURRENT_TXT_PREFIX" != "$CONTAINER_DATASET" ]; then
-        sed -i "s|$CURRENT_TXT_PREFIX|$CONTAINER_DATASET|g" "$FPATH"
-        echo -e "${GREEN}✔ $f updated${NC}"
-    else
-        echo "  $f already correct"
-    fi
-done
-
 # ─── Build Docker image ───────────────────────────────────────────────────────
 echo ""
 echo "─── Docker image ─────────────────────────────────"

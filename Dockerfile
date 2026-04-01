@@ -21,4 +21,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN wget -q https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt -O yolov5s.pt
 
+RUN sed -i \
+    -e 's|^train:.*|train:  /dataset/train.txt|' \
+    -e 's|^train2:.*|train2: /dataset/train2.txt|' \
+    -e 's|^val:.*|val:    /dataset/val.txt|' \
+    -e 's|^val2:.*|val2:   /dataset/val2.txt|' \
+    -e 's|^test:.*|test:   /dataset/test.txt|' \
+    data/ARD100_mask32.yaml
+
 EXPOSE 6006
