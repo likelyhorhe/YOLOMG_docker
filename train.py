@@ -5,6 +5,9 @@ import random
 import sys
 import time
 
+from line_profiler import LineProfiler
+import torch.profiler
+
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -266,6 +269,43 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
                 f"Logging results to {colorstr('bold', save_dir)}\n"
                 f'Starting training for {epochs} epochs...')
 
+    # ── LineProfiler setup ────────────────────────────────────────────────────
+    lp = LineProfiler()
+
+    def _batch_step(imgs, imgs2, targets, ni, nw, epoch, lf, optimizer, scaler, model, compute_loss, ema):
+        # Warmup
+        with torch.profiler.record_function("warmup"):
+            if ni <= nw:
+                xi = [0, nw]
+                accumulate = max(1, np.interp(ni, xi, [1, nbs / batch_size]).round())
+                for j, x in enumerate(optimizer.param_groups):
+                    x['lr'] = np.interp(ni, xi, [hyp['warmup_bias_lr'] if j == 2 else 0.0, x['initial_lr'] * lf(epoch)])
+                    if 'momentum' in x:
+                        x['momentum'] = np.interp(ni, xi, [hyp['warmup_momentum'], hyp['momentum']])
+        # Forward
+        with torch.profiler.record_function("forward"):
+            with amp.autocast(enabled=cuda):
+                pred = model(imgs, imgs2)
+                loss, loss_items = compute_loss(pred, targets.to(device))
+                if RANK != -1:
+                    loss *= WORLD_SIZE
+                if opt.quad:
+                    loss *= 4.
+        # Backward
+        with torch.profiler.record_function("backward"):
+            scaler.scale(loss).backward()
+        # Optimize
+        with torch.profiler.record_function("optimize"):
+            if ni - last_opt_step >= accumulate:
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
+        return loss, loss_items
+
+    lp_batch_step = lp(_batch_step)
+
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
@@ -286,55 +326,57 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
         LOGGER.info(('\n' + '%10s' * 7) % ('Epoch', 'gpu_mem', 'box', 'obj', 'cls', 'labels', 'img_size'))
         if RANK in [-1, 0]:
             pbar = tqdm(pbar, total=nb, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')  # progress bar
-        optimizer.zero_grad() 
+        optimizer.zero_grad()
+
+        # ── PyTorch Profiler (epoch 0 only, first 10 batches) ─────────────────
+        prof = None
+        if epoch == start_epoch and RANK in [-1, 0]:
+            prof = torch.profiler.profile(
+                activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+                schedule=torch.profiler.schedule(wait=1, warmup=1, active=8),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(str(save_dir / 'profiler')),
+                record_shapes=True,
+                with_stack=True,
+            )
+            prof.start()
+
         for i, (imgs,imgs2, targets, paths,paths2,_,_) in pbar:  # batch -------------------------------------------------------------
 
             ni = i + nb * epoch  # number integrated batches (since train start)
-            imgs = imgs.to(device, non_blocking=True).float() / 255  # uint8 to float32, 0-255 to 0.0-1.0
-            imgs2 = imgs2.to(device, non_blocking=True).float() / 255  # uint8 to float32, 0-255 to 0.0-1.0
-            # Warmup
-            if ni <= nw:
-                xi = [0, nw]  # x interp
-                # compute_loss.gr = np.interp(ni, xi, [0.0, 1.0])  # iou loss ratio (obj_loss = 1.0 or iou)
-                accumulate = max(1, np.interp(ni, xi, [1, nbs / batch_size]).round())
-                for j, x in enumerate(optimizer.param_groups):
-                    # bias lr falls from 0.1 to lr0, all other lrs rise from 0.0 to lr0
-                    x['lr'] = np.interp(ni, xi, [hyp['warmup_bias_lr'] if j == 2 else 0.0, x['initial_lr'] * lf(epoch)])
-                    if 'momentum' in x:
-                        x['momentum'] = np.interp(ni, xi, [hyp['warmup_momentum'], hyp['momentum']])
+            imgs = imgs.to(device, non_blocking=True).float() / 255
+            imgs2 = imgs2.to(device, non_blocking=True).float() / 255
 
             if opt.multi_scale:
-                sz = random.randrange(imgsz * 0.5, imgsz * 1.5 + gs) // gs * gs  # size
-                sf = sz / max(imgs.shape[2:])  # scale factor
-                sf2 = sz / max(imgs2.shape[2:])  # scale factor
+                sz = random.randrange(imgsz * 0.5, imgsz * 1.5 + gs) // gs * gs
+                sf = sz / max(imgs.shape[2:])
+                sf2 = sz / max(imgs2.shape[2:])
                 if sf != 1:
-                    ns = [math.ceil(x * sf / gs) * gs for x in imgs.shape[2:]]  # new shape (stretched to gs-multiple)
+                    ns = [math.ceil(x * sf / gs) * gs for x in imgs.shape[2:]]
                     ns2 = [math.ceil(x * sf2 / gs) * gs for x in imgs2.shape[2:]]
                     imgs = nn.functional.interpolate(imgs, size=ns, mode='bilinear', align_corners=False)
                     imgs2 = nn.functional.interpolate(imgs2, size=ns2, mode='bilinear', align_corners=False)
-            # Forward 
-            with amp.autocast(enabled=cuda):
-                pred = model(imgs,imgs2)  
-                # loss
-                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
-                if RANK != -1:
-                    loss *= WORLD_SIZE  # gradient averaged between devices in DDP mode
-                if opt.quad:
-                    loss *= 4.
 
-            # Backward
-            scaler.scale(loss).backward()
+            # Forward + Backward + Optimize
+            if RANK in [-1, 0]:
+                loss, loss_items = lp_batch_step(imgs, imgs2, targets, ni, nw, epoch, lf, optimizer, scaler, model, compute_loss, ema)
+                if (i + 1) % 10 == 0:
+                    LOGGER.info(f'\n── LineProfiler (epoch {epoch}, iter {i - 8}–{i}) ──')
+                    lp.print_stats()
+                    lp.clear_stats()
+            else:
+                loss, loss_items = _batch_step(imgs, imgs2, targets, ni, nw, epoch, lf, optimizer, scaler, model, compute_loss, ema)
 
-            # Optimize
-            if ni - last_opt_step >= accumulate: 
-                scaler.step(optimizer)  # optimizer.step
-                scaler.update()
-                optimizer.zero_grad() 
-                if ema:
-                    ema.update(model)
+            # update last_opt_step
+            if ni - last_opt_step >= max(1, np.interp(ni, [0, nw], [1, nbs / batch_size]).round()):
                 last_opt_step = ni
 
-            # Log 打印信息
+            if prof is not None:
+                prof.step()
+                if i >= 9:  # stop after 10 batches
+                    prof.stop()
+                    prof = None
+
+            # Log
             if RANK in [-1, 0]:
                 mloss = (mloss * i + loss_items) / (i + 1)  # update mean losses
                 mem = f'{torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0:.3g}G'  # (GB)
