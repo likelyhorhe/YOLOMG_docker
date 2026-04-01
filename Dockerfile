@@ -17,7 +17,7 @@ WORKDIR /app
 
 RUN git clone https://github.com/likelyhorhe/YOLOMG_docker.git .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt thop
 
 RUN wget -q https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt -O yolov5s.pt
 
