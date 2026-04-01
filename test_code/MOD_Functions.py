@@ -1,4 +1,5 @@
 import cv2
+import os
 import numpy as np
 from torch import nn
 from torchvision import transforms
@@ -7,6 +8,8 @@ import torch
 import xml.etree.ElementTree as ET
 import onnxruntime as ort
 from PIL import Image
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from torchvision.models import resnet18
 
@@ -681,7 +684,7 @@ def resnet18_infer(src):
 
     model = resnet18()
     # load model weights
-    model_weight_path = "/home/user-guo/Documents/MovingDrone/weight/resnet18_best_1.pth"
+    model_weight_path = os.path.join(PROJECT_ROOT, 'weights', 'resnet18_best_1.pth')
     model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cuda')))
     # model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
     model.eval()

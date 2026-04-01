@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env_PC/
+env/
+.venv/
+
+# Training outputs
+runs/
+
+# Dataset (mounted externally)
+datasets/
+
+# Docker / local config
+config.env
+
+# Misc
+.idea/
+.Trash-1000/
+.claude/
+*.egg-info/
+dist/
+build/
+.DS_Store

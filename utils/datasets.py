@@ -342,7 +342,7 @@ def img2label_paths(img_paths):
     return [sb.join(x.rsplit(sa, 1)).rsplit('.', 1)[0] + '.txt' for x in img_paths]
 def img2label_paths2(img_paths):
     # Define label paths as a function of image paths
-    sa, sb = os.sep + 'images2' + os.sep, os.sep + 'labels' + os.sep  # /images/, /labels/ substrings
+    sa, sb = os.sep + 'masks' + os.sep, os.sep + 'labels' + os.sep  # /masks/, /labels/ substrings
     return [sb.join(x.rsplit(sa, 1)).rsplit('.', 1)[0] + '.txt' for x in img_paths]
 def get_cache(path,mode,prefix):
     prefix=prefix

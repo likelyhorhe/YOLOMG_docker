@@ -1,8 +1,8 @@
 
 import os
 import sys
-cwd = os.getcwd().rstrip('test')
-sys.path.append(os.path.join(cwd, './'))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ROOT)
 
 import cv2
 
@@ -61,7 +61,7 @@ class Yolov5Detector():
         self.half = half = device.type != 'cpu' # half precision only supported on CUDA
         
         # Load model
-        weights = os.path.join(cwd, weights)
+        weights = os.path.join(PROJECT_ROOT, weights)
         self.model = model = attempt_load(weights, map_location=device) # load FP32 model
         self.stride = stride = int(model.stride.max()) # model stride
         self.imgsz = imgsz = check_img_size(imgsz, s=stride) # check img_size
@@ -115,9 +115,9 @@ class Yolov5Detector():
 
 if __name__ == '__main__':
 
-    detector = Yolov5Detector(weights='/home/user-guo/Documents/YOLOMG/runs/train/ARD100_dual_uav2-1280/weights/best.pt')
-    img1 = cv2.imread('/home/user-guo/Documents/YOLOMG/data/Test/images/phantom05_0606.jpg')
-    img2 = cv2.imread('/home/user-guo/Documents/YOLOMG/data/Test/mask/phantom05_0606.jpg')
+    detector = Yolov5Detector(weights='runs/train/ARD100_mask32-1280/weights/best.pt')
+    img1 = cv2.imread(os.path.join(PROJECT_ROOT, 'test_images', 'phantom05', 'phantom05_0606.jpg'))
+    img2 = cv2.imread(os.path.join(PROJECT_ROOT, 'masks', 'phantom05', 'phantom05_0606.jpg'))
     
     t1 = time.time()
     labels, scores, boxes = detector.run(img1, img2, classes=[0, 1, 2, 3, 4])  # pedestrian, cyclist, car, bus, truck

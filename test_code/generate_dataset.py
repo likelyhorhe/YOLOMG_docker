@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ET
 import random
 import numpy as np
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 # ARD100 all videos
 set0 = ['phantom02', 'phantom03', 'phantom04', 'phantom05', 'phantom08', 'phantom09', 'phantom10', 'phantom14', 'phantom17', 'phantom19',
@@ -61,13 +63,13 @@ set_gs = ['phantom03', 'phantom05', 'phantom47', 'phantom93']  # 400~1024
 
 for video_sets in set2:
     id = video_sets
-    imgdir = "/home/user-guo/data/drone-dataset/phantom-dataset/images/" + id + "/"
-    annodir = '/home/user-guo/data/drone-dataset/phantom-dataset/Annotations/' + id + '/'
-    maskdir = '/home/user-guo/data/drone-dataset/phantom-dataset/mask22/' + id + '/'
+    imgdir = os.path.join(PROJECT_ROOT, 'test_images', id) + os.sep
+    annodir = os.path.join(PROJECT_ROOT, 'annotations', id) + os.sep
+    maskdir = os.path.join(PROJECT_ROOT, 'masks', id) + os.sep
 
-    imgdest = '/home/user-guo/Documents/YOLOMG/datasets/ARD100_mask22/images/'
-    annodest = '/home/user-guo/Documents/YOLOMG/datasets/ARD100_mask22/Annotations/'
-    maskdest = '/home/user-guo/Documents/YOLOMG/datasets/ARD100_mask22/mask22/'
+    imgdest = os.path.join(PROJECT_ROOT, 'datasets', 'ARD100_mask32', 'images') + os.sep
+    annodest = os.path.join(PROJECT_ROOT, 'datasets', 'ARD100_mask32', 'Annotations') + os.sep
+    maskdest = os.path.join(PROJECT_ROOT, 'datasets', 'ARD100_mask32', 'masks') + os.sep
 
     if not os.path.exists(imgdest):
         os.makedirs(imgdest)
@@ -94,7 +96,7 @@ for video_sets in set2:
 
     # for image in train_list:
     for i in range(end_index):
-        image = id + '_' + str(i*1 + 2).zfill(4)
+        image = id + '_' + str(i*1 + 3).zfill(4)
         name = image.split(".")
         imgname = name[0] + '.jpg'
         xmlname = name[0] + '.xml'
@@ -104,6 +106,10 @@ for video_sets in set2:
         xml_path = os.path.join(annodir, xmlname)
 
         if not os.path.exists(xml_path):
+            continue
+        if not os.path.exists(img_path):
+            continue
+        if not os.path.exists(mask_path):
             continue
 
         tree = ET.parse(xml_path)

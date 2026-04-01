@@ -1,9 +1,12 @@
 import cv2
+import os
 import numpy as np
 import time
 
 from yolov5_dualdetector import Yolov5Detector
 from FD2_mask import FD2_mask
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # all test videos
@@ -30,13 +33,13 @@ set5 = ['phantom61', 'phantom133']
 
 for i in range(len(set5)):
     video_name = set5[i]
-    cap = cv2.VideoCapture('./videos/' + video_name + '.mp4')
+    cap = cv2.VideoCapture(os.path.join(PROJECT_ROOT, 'test_videos', video_name + '.mp4'))
 
     count = 0
     prveframe = None
 
     fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
-    filename = "./output/" + video_name + ".mp4"
+    filename = os.path.join(PROJECT_ROOT, 'output', video_name + '.mp4')
     vw = cv2.VideoWriter(filename, fourcc, int(cap.get(5)), (int(cap.get(3)), int(cap.get(4))))
 
     while cap.isOpened():
@@ -55,12 +58,12 @@ for i in range(len(set5)):
         frame_show = frame.copy()
         # mask = FD2_mask(prveframe, frame)
         # color_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-        path = '/home/user-guo/data/drone-dataset/phantom-dataset/mask/' + video_name + '/'
+        path = os.path.join(PROJECT_ROOT, 'masks', video_name) + os.sep
         name = video_name + '_' + str(count).zfill(4) + '.jpg'
         filename = path + name
         mask = cv2.imread(filename)
 
-        detector = Yolov5Detector(weights='/home/user-guo/Documents/YOLOMG/runs/train/ARD100_dual_uav2-1280/weights/best.pt')
+        detector = Yolov5Detector(weights='runs/train/ARD100_mask32-1280/weights/best.pt')
         labels, scores, boxes = detector.run(frame, mask, classes=[0, 1, 2, 3, 4])  # drone
 
         obj_num = 0

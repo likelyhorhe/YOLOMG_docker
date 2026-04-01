@@ -4,6 +4,8 @@ import numpy as np
 from MOD_Functions import motion_compensate
 from MOD_Functions import enlargebox
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 kernel_size = 3
 
 
@@ -32,7 +34,7 @@ def FD2_mask(lastFrame1, lastFrame2, frame_count, video_name):
     # close_demo = cv2.morphologyEx(open_demo, cv2.MORPH_CLOSE, kernel2, iterations=3)
     # cv2.imshow('Morphological Operation', close_demo)
 
-    save_path = '/home/user-guo/data/drone-videos/Drone-vs-Bird/mask22/' + video_name
+    save_path = os.path.join(PROJECT_ROOT, 'masks', 'Drone-vs-Bird', video_name)
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)

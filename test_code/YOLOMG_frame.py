@@ -1,23 +1,25 @@
 
 import cv2
+import os
 import numpy as np
 import time
 
 from yolov5_dualdetector import Yolov5Detector
 from FD2_mask import FD2_mask
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 set5 = ['phantom61', 'phantom133']
 
 
-path1 = '/home/user-guo/data/drone-dataset/phantom-dataset/images/phantom133/phantom133_0126.jpg'
-path2 = '/home/user-guo/data/drone-dataset/phantom-dataset/mask/phantom133/phantom133_0126.jpg'
+path1 = os.path.join(PROJECT_ROOT, 'test_images', 'phantom133', 'phantom133_0126.jpg')
+path2 = os.path.join(PROJECT_ROOT, 'masks', 'phantom133', 'phantom133_0126.jpg')
 
 frame = cv2.imread(path1)
 frame_show = frame.copy()
 mask = cv2.imread(path2)
 
-detector = Yolov5Detector(weights='/home/user-guo/Documents/YOLOMG/runs/train/ARD100_dual_uav2-1280/weights/best.pt')
+detector = Yolov5Detector(weights='runs/train/ARD100_mask32-1280/weights/best.pt')
 labels, scores, boxes = detector.run(frame, mask, classes=[0, 1, 2, 3, 4])  # drone
 
 if len(boxes) != 0:
@@ -31,6 +33,6 @@ if len(boxes) != 0:
         cv2.putText(frame_show, str(f"{conf:.2f}"), (x11, y11 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
 
 cv2.imshow('Detection', frame_show)
-cv2.imwrite('./yolomg-1280-2.jpg', frame_show)
+cv2.imwrite(os.path.join(PROJECT_ROOT, 'yolomg-1280-2.jpg'), frame_show)
 
 

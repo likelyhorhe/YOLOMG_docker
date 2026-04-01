@@ -1,6 +1,9 @@
 import cv2
+import os
 import numpy as np
 from FD3_mask import FD3_mask
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # all test videos
 set0 = ['phantom02', 'phantom03', 'phantom04', 'phantom05', 'phantom08', 'phantom22', 'phantom39',
@@ -41,7 +44,7 @@ sets_NPS_test = ['Clip_41', 'Clip_42', 'Clip_43', 'Clip_44', 'Clip_45', 'Clip_46
 
 for video_sets in set0:
     video_name = video_sets
-    cap = cv2.VideoCapture('/home/user-guo/data/ARD-MAV/test_videos/' + video_name + '.mp4')
+    cap = cv2.VideoCapture(os.path.join(PROJECT_ROOT, 'test_videos', video_name + '.mp4'))
     lastFrame1 = None
     lastFrame2 = None
     count = 0

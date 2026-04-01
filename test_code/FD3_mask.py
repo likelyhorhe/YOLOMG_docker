@@ -5,6 +5,8 @@ from MOD_Functions import motion_compensate
 from MOD_Functions import enlargebox
 import imgviz
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 kernel_size = 3
 
 
@@ -68,7 +70,7 @@ def FD3_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count):
     # close_demo = cv2.morphologyEx(open_demo, cv2.MORPH_CLOSE, kernel2, iterations=3)
     # cv2.imshow('Morphological Operation', close_demo)
 
-    save_path = '/home/user-guo/data/drone-dataset/phantom-dataset/mask31/' + video_name
+    save_path = os.path.join(PROJECT_ROOT, 'masks', 'mask31', video_name)
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)

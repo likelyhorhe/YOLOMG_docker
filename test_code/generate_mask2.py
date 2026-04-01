@@ -1,6 +1,9 @@
 import cv2
+import os
 import numpy as np
 from FD2_mask import FD2_mask
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # domain adaptation
 set1 = ['phantom02', 'phantom03', 'phantom04', 'phantom05', 'phantom47', 'phantom50',
@@ -38,7 +41,7 @@ for video_sets in Drone_vs_Bird:
     video_name = video_sets
     frame_name = Drone_name[vi_id]
     # cap = cv2.VideoCapture('/home/user-guo/data/ARD-MAV/test_videos/' + video_name + '.mp4')
-    cap = cv2.VideoCapture('/home/user-guo/data/drone-videos/Drone-vs-Bird/videos/' + video_name + '.mp4')
+    cap = cv2.VideoCapture(os.path.join(PROJECT_ROOT, 'test_videos', 'Drone-vs-Bird', video_name + '.mp4'))
     lastFrame1 = None
     lastFrame2 = None
     count = -1

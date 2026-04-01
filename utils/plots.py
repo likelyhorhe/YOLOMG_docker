@@ -148,7 +148,10 @@ class Annotator:
 
     def text(self, xy, text, txt_color=(255, 255, 255)):
         # Add text to image (PIL-only)
-        w, h = self.font.getsize(text)  # text width, height
+        if hasattr(self.font, 'getsize'):
+            w, h = self.font.getsize(text)  # Pillow < 10
+        else:
+            _, _, w, h = self.font.getbbox(text)  # Pillow >= 10
         self.draw.text((xy[0], xy[1] - h + 1), text, fill=txt_color, font=self.font)
 
     def result(self):
