@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-RUN git clone https://github.com/likelyhorhe/YOLOMG.git .
+RUN git clone https://github.com/likelyhorhe/YOLOMG_docker.git .
 
 RUN pip install --no-cache-dir -r requirements.txt
 

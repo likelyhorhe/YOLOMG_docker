@@ -80,7 +80,7 @@ YAML="$REPO_DIR/data/ARD100_mask32.yaml"
 CONTAINER_DATASET="/dataset"
 
 # Update yaml to use container path
-CURRENT_PREFIX=$(grep "train:" "$YAML" | head -1 | awk '{print $2}' | grep -oP "^.*${DATASET_NAME}")
+CURRENT_PREFIX=$(grep "train:" "$YAML" | head -1 | awk '{print $2}' | grep -oP "^.*${DATASET_NAME}" || true)
 if [ -n "$CURRENT_PREFIX" ] && [ "$CURRENT_PREFIX" != "$CONTAINER_DATASET" ]; then
     sed -i "s|$CURRENT_PREFIX|$CONTAINER_DATASET|g" "$YAML"
     echo -e "${GREEN}✔ yaml updated${NC}"
@@ -95,7 +95,7 @@ for f in "${TXT_FILES[@]}"; do
     [ ! -f "$FPATH" ] && continue
     FIRST_LINE=$(head -1 "$FPATH")
     [ -z "$FIRST_LINE" ] && echo "  SKIP: $f is empty" && continue
-    CURRENT_TXT_PREFIX=$(echo "$FIRST_LINE" | grep -oP "^.*${DATASET_NAME}")
+    CURRENT_TXT_PREFIX=$(echo "$FIRST_LINE" | grep -oP "^.*${DATASET_NAME}" || true)
     if [ -n "$CURRENT_TXT_PREFIX" ] && [ "$CURRENT_TXT_PREFIX" != "$CONTAINER_DATASET" ]; then
         sed -i "s|$CURRENT_TXT_PREFIX|$CONTAINER_DATASET|g" "$FPATH"
         echo -e "${GREEN}✔ $f updated${NC}"
